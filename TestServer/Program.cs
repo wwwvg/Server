@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 
-new Thread(RunServerAsync).Start(); // Run server method concurrently.
+new Thread(RunServerAsync).Start(); 
 Thread.Sleep(500);
 Console.ReadKey();
 
@@ -27,13 +27,14 @@ async Task Accept(TcpClient client)
         {
             byte[] data = new byte[255];
             await n.ReadAsync(data, 0, 255);
-
+            Console.WriteLine($"{DateTime.Now} Получено байт: {data.Length}  Хэш = {GetHash(data)}");
             int sum = Sum(data);
             if (sum == 0)
             {
                 data[0] = 0;
                 data[1] = 0;
                 await n.WriteAsync(data, 0, 2);
+                Console.WriteLine($"Нет данных. Отправлен нулевой результат\n");
             }
             else if (sum > 0)
             {
@@ -41,11 +42,13 @@ async Task Accept(TcpClient client)
                 data[0] = tuple.Item1;
                 data[1] = tuple.Item2;
                 await n.WriteAsync(data, 0, 2);
+                Console.WriteLine($"Отправлен результат: {sum.ToString("X")}\n");
             }
             else
             {
                 n.Flush();
                 client.Close();
+                Console.WriteLine($"Нет набора данных.\n");
             }
         }
     }
@@ -55,9 +58,9 @@ async Task Accept(TcpClient client)
 int Sum(byte[] data)
 {
     int firstIndex = Array.IndexOf(data, (byte)10);
-    int lastIndex = Array.IndexOf(data, (byte)11);
+    int lastIndex = Array.LastIndexOf(data, (byte)11);
 
-    if (firstIndex == -1 || lastIndex == -1 || firstIndex > lastIndex) // только мусор
+    if (firstIndex == -1 || lastIndex == -1 || firstIndex > lastIndex) // если только мусор
         return -1;
 
     if(lastIndex - firstIndex == 1) // нет данных
@@ -85,4 +88,12 @@ int Sum(byte[] data)
 int FromTwoBytes(byte lowByte, byte highByte) // проверка
 {
     return highByte * 256 + lowByte;
+}
+
+int GetHash(byte[] data)
+{
+    string hash = string.Empty;
+    foreach (var item in data)
+        hash += item.ToString();
+    return hash.GetHashCode();
 }
